@@ -134,6 +134,13 @@
 			<scope>system</scope>
 			<systemPath>${java.home}/lib/jfxrt.jar</systemPath>
 		</dependency>
+
+		<dependency>
+			<groupId>org.open-dolphin</groupId>
+			<artifactId>dolphin-client</artifactId>
+			<version>0.8</version>
+		</dependency>
+
 	</dependencies>
 
 
