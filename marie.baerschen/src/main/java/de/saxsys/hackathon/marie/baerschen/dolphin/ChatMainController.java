@@ -161,14 +161,12 @@ public class ChatMainController {
                         }
                     });
 
-                    // final Label userName = new Label(nextPost.getAt(ATTR_NAME).getValue().toString());
-                    //
-                    // bind("text").of(userName).to(ATTR_NAME).of(nextPost, withRelease);
-                    // bind(ATTR_NAME).of(nextPost).to("text").of(userName);
-                    final Label postDate = new Label(nextPost.getAt(ATTR_DATE).getValue().toString());
-                    bind("text").of(postDate).to(ATTR_DATE).of(nextPost, withRelease);
-                    bind(ATTR_DATE).of(nextPost).to("text").of(postDate);
+                    final Label postDate = new DateLabel(nextPost.getAt(ATTR_DATE).getValue().toString());
+                    postDate.getStyleClass().add("post");
+                    bind("formattedDate").of(postDate).to(ATTR_DATE).of(nextPost, withRelease);
+                    bind(ATTR_DATE).of(nextPost).to("formattedDate").of(postDate);
                     final Label userPost = new Label(nextPost.getAt(ATTR_MESSAGE).getValue().toString());
+                    userPost.getStyleClass().add("post");
                     bind("text").of(userPost).to(ATTR_MESSAGE).of(nextPost, withRelease);
                     bind(ATTR_MESSAGE).of(nextPost).to("text").of(userPost);
 
@@ -199,6 +197,10 @@ public class ChatMainController {
                                 }
                             }
                             ((VBox) participantHolder.getContent()).getChildren().removeAll(boxToRemove);
+                            if (((VBox) participantHolder.getContent()).getChildren().isEmpty()) {
+                                chatWindow.getChildren().removeAll(participantHolder);
+                                participants.remove(getUserId(event.getPresentationModel()));
+                            }
                         }
 
                     });
@@ -242,6 +244,7 @@ public class ChatMainController {
             });
             participants.put(id, holder);
         }
+        bind("text").of(holder).to(ATTR_NAME).of(presentationModel);
         bind(ATTR_NAME).of(presentationModel).to("text").of(holder);
         return holder;
     }

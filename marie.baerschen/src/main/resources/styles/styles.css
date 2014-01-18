@@ -38,4 +38,9 @@
     -fx-spacing: 3;
     
 }
- 
+
+.post {
+    -fx-padding: 2;
+    -fx-spacing: 2;
+    
+} 
