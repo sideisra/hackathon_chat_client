@@ -9,7 +9,6 @@ import static de.saxsys.hackathon.marie.baerschen.dolphin.ChatterConstants.CMD_P
 import static de.saxsys.hackathon.marie.baerschen.dolphin.ChatterConstants.PM_ID_INPUT;
 import static de.saxsys.hackathon.marie.baerschen.dolphin.ChatterConstants.TYPE_POST;
 import static org.opendolphin.binding.JFXBinder.bind;
-import static org.opendolphin.binding.JFXBinder.unbind;
 import groovy.util.Eval;
 
 import java.util.List;
@@ -28,7 +27,6 @@ import javafx.scene.layout.VBox;
 import org.opendolphin.binding.Converter;
 import org.opendolphin.core.ModelStoreEvent;
 import org.opendolphin.core.ModelStoreListener;
-import org.opendolphin.core.PresentationModel;
 import org.opendolphin.core.client.ClientAttribute;
 import org.opendolphin.core.client.ClientDolphin;
 import org.opendolphin.core.client.ClientPresentationModel;
@@ -36,151 +34,135 @@ import org.opendolphin.core.client.comm.OnFinishedHandlerAdapter;
 
 public class ChatMainController {
 
-	static ClientDolphin clientDolphin;
-	
-	@FXML
-	private TextField nameField;
-	@FXML
-	private TextArea postField;
-	@FXML
-	private Button newButton;
-	@FXML
-	private VBox chatWindow; 
+    static ClientDolphin clientDolphin;
 
-	private PresentationModel postModel;
+    @FXML
+    private TextField nameField;
+    @FXML
+    private TextArea postField;
+    @FXML
+    private Button newButton;
+    @FXML
+    private VBox chatWindow;
 
-	public ChatMainController() {
-		ClientAttribute nameAttribute = new ClientAttribute(ATTR_NAME, "");
-		ClientAttribute postAttribute = new ClientAttribute(ATTR_MESSAGE, "");
-		ClientAttribute dateAttribute = new ClientAttribute(ATTR_DATE, "");
-		postModel = clientDolphin.presentationModel(PM_ID_INPUT, nameAttribute,
-				postAttribute, dateAttribute);
-	}
+    private final ClientPresentationModel postModel;
 
-	@FXML
-	public void initialize() {
-		
-		setupBinding();
-		addClientSideAction();
+    public ChatMainController() {
+        ClientAttribute nameAttribute = new ClientAttribute(ATTR_NAME, "");
+        ClientAttribute postAttribute = new ClientAttribute(ATTR_MESSAGE, "");
+        ClientAttribute dateAttribute = new ClientAttribute(ATTR_DATE, "");
+        postModel = clientDolphin.presentationModel(PM_ID_INPUT, nameAttribute, postAttribute, dateAttribute);
+    }
 
-		
-		clientDolphin.send(CMD_INIT, new OnFinishedHandlerAdapter() {
-			@Override
-			public void onFinished(
-					List<ClientPresentationModel> presentationModels) {
-				System.out.println("" + presentationModels.size() + "bekommen");
-				
+    @FXML
+    public void initialize() {
 
-				longPoll();
+        setupBinding();
+        addClientSideAction();
 
-			}
-		});
-	}
+        clientDolphin.send(CMD_INIT, new OnFinishedHandlerAdapter() {
+            @Override
+            public void onFinished(List<ClientPresentationModel> presentationModels) {
+                System.out.println("" + presentationModels.size() + "bekommen");
 
-	private boolean channelBlocked = false;
+                longPoll();
 
-	private void release() {
-		if (!channelBlocked)
-			return; // avoid too many unblocks
-		channelBlocked = false;
-		String url = "https://klondike.canoo.com/dolphin-grails/chatter/release";
-		String result = Eval.x(url, "x.toURL().text").toString();
-		System.out.println("release result = " + result);
-	}
+            }
+        });
+    }
 
-	private void longPoll() {
-		channelBlocked = true;
-		clientDolphin.send(CMD_POLL, new OnFinishedHandlerAdapter() {
-			@Override
-			public void onFinished(
-					List<ClientPresentationModel> presentationModels) {
-				longPoll();
-			}
-		});
-	}
+    private boolean channelBlocked = false;
 
-	private final Converter withRelease = new Converter() {
+    private void release() {
+        if (!channelBlocked)
+            return; // avoid too many unblocks
+        channelBlocked = false;
+        String url = "https://klondike.canoo.com/dolphin-grails/chatter/release";
+        String result = Eval.x(url, "x.toURL().text").toString();
+        System.out.println("release result = " + result);
+    }
 
-		@Override
-		public Object convert(Object value) {
-			release();
-			return value;
-		}
-	};
+    private void longPoll() {
+        channelBlocked = true;
+        clientDolphin.send(CMD_POLL, new OnFinishedHandlerAdapter() {
+            @Override
+            public void onFinished(List<ClientPresentationModel> presentationModels) {
+                longPoll();
+            }
+        });
+    }
 
-	private void setupBinding() {
+    private final Converter withRelease = new Converter() {
 
-		bind("text").of(nameField).to(ATTR_NAME).of(postModel, withRelease);
-		bind(ATTR_NAME).of(postModel).to("text").of(nameField);
+        @Override
+        public Object convert(Object value) {
+            release();
+            return value;
+        }
+    };
 
-		bind("text").of(postField).to(ATTR_MESSAGE).of(postModel, withRelease);
-		bind(ATTR_MESSAGE).of(postModel).to("text").of(postField);
+    private void setupBinding() {
 
-		clientDolphin.addModelStoreListener(TYPE_POST,
-				new ModelStoreListener() {
-					@Override
-					public void modelStoreChanged(ModelStoreEvent event) {
-						if (event.getType() == ModelStoreEvent.Type.ADDED) {
-							System.out.println(" wir haben den pm bekommen:  "
-									+ event.getPresentationModel().getId());
-							final PresentationModel nextPost = event.getPresentationModel(); 
-							
-							HBox box = new HBox(); 
-							
-							box.setOnMouseClicked(new EventHandler<Event>() {
+        bind("text").of(nameField).to(ATTR_NAME).of(postModel, withRelease);
+        bind(ATTR_NAME).of(postModel).to("text").of(nameField);
 
-								@Override
-								public void handle(Event event) {
-									unbind("text").of(nameField).from(ATTR_NAME).of(postModel);
-									unbind(ATTR_NAME).of(postModel).from("text").of(nameField);
-									bind(ATTR_NAME).of(nextPost).to("text").of(nameField);
-									bind("text").of(nameField).to(ATTR_NAME).of(nextPost, withRelease);
+        bind("text").of(postField).to(ATTR_MESSAGE).of(postModel, withRelease);
+        bind(ATTR_MESSAGE).of(postModel).to("text").of(postField);
 
-									unbind("text").of(postField).from(ATTR_MESSAGE).of(postModel);
-									unbind(ATTR_MESSAGE).of(postModel).from("text").of(postField);
-									bind(ATTR_MESSAGE).of(nextPost).to("text").of(postField);
-									bind("text").of(postField).to(ATTR_MESSAGE).of(nextPost, withRelease);
-									
-									postModel = nextPost;
-								}
-							});
-						
-							Label userName = new Label(nextPost.getAt(ATTR_NAME).getValue().toString());
-							bind("text").of(userName).to(ATTR_NAME).of(nextPost, withRelease); 
-							bind(ATTR_NAME).of(nextPost).to("text").of(userName);
-							Label postDate = new Label(nextPost.getAt(ATTR_DATE).getValue().toString()); 
-							bind("text").of(postDate).to(ATTR_DATE).of(nextPost, withRelease); 
-							bind(ATTR_DATE).of(nextPost).to("text").of(postDate);
-							Label userPost = new Label(nextPost.getAt(ATTR_MESSAGE).getValue().toString()); 
-							bind("text").of(userPost).to(ATTR_MESSAGE).of(nextPost, withRelease); 
-							bind(ATTR_MESSAGE).of(nextPost).to("text").of(userPost);
-							
-							box.getChildren().addAll(userName, postDate, userPost); 
-							
-							chatWindow.getChildren().addAll(box);
-						}
-						if (event.getType() == ModelStoreEvent.Type.REMOVED) {
-							System.out.println(" wir haben den pm geloescht:  "
-									+ event.getPresentationModel().getId());
-						}
-					}
-				});
+        clientDolphin.addModelStoreListener(TYPE_POST, new ModelStoreListener() {
+            @Override
+            public void modelStoreChanged(ModelStoreEvent event) {
+                if (event.getType() == ModelStoreEvent.Type.ADDED) {
+                    System.out.println(" wir haben den pm bekommen:  " + event.getPresentationModel().getId());
+                    final ClientPresentationModel nextPost = (ClientPresentationModel) event.getPresentationModel();
 
-		// on select : pm per id:
-		// pm = clientDolphin.getAt("meineid")
-		// clientDolphin.apply(pm).to(postModel);
-		// release();
+                    HBox box = new HBox();
 
-	}
+                    box.setOnMouseClicked(new EventHandler<Event>() {
 
-	private void addClientSideAction() {
-		newButton.setOnAction(new EventHandler<ActionEvent>() {
+                        @Override
+                        public void handle(Event event) {
+                            clientDolphin.apply(nextPost).to(postModel);
+                            release();
 
-			@Override
-			public void handle(ActionEvent arg0) {
-				clientDolphin.send(CMD_POST);
-				release();
-			}
-		});
-	}
+                        }
+                    });
+
+                    Label userName = new Label(nextPost.getAt(ATTR_NAME).getValue().toString());
+                    bind("text").of(userName).to(ATTR_NAME).of(nextPost, withRelease);
+                    bind(ATTR_NAME).of(nextPost).to("text").of(userName);
+                    Label postDate = new Label(nextPost.getAt(ATTR_DATE).getValue().toString());
+                    bind("text").of(postDate).to(ATTR_DATE).of(nextPost, withRelease);
+                    bind(ATTR_DATE).of(nextPost).to("text").of(postDate);
+                    Label userPost = new Label(nextPost.getAt(ATTR_MESSAGE).getValue().toString());
+                    bind("text").of(userPost).to(ATTR_MESSAGE).of(nextPost, withRelease);
+                    bind(ATTR_MESSAGE).of(nextPost).to("text").of(userPost);
+
+                    box.getChildren().addAll(userName, postDate, userPost);
+
+                    chatWindow.getChildren().addAll(box);
+                }
+                if (event.getType() == ModelStoreEvent.Type.REMOVED) {
+                    System.out.println(" wir haben den pm geloescht:  " + event.getPresentationModel().getId());
+                }
+            }
+        });
+
+        // on select : pm per id:
+        // pm = clientDolphin.getAt("meineid")
+        // clientDolphin.apply(pm).to(postModel);
+        // release();
+
+    }
+
+    private void addClientSideAction() {
+        newButton.setOnAction(new EventHandler<ActionEvent>() {
+
+            @Override
+            public void handle(ActionEvent arg0) {
+                clientDolphin.send(CMD_POST);
+                release();
+            }
+        });
+    }
 }
