@@ -126,38 +126,40 @@ public class ChatMainController {
 							final PresentationModel nextPost = event.getPresentationModel(); 
 							
 							HBox box = new HBox(); 
-							
-							box.setOnMouseClicked(new EventHandler<Event>() {
-
-								@Override
-								public void handle(Event event) {
-									unbind("text").of(nameField).from(ATTR_NAME).of(postModel);
-									unbind(ATTR_NAME).of(postModel).from("text").of(nameField);
-									bind(ATTR_NAME).of(nextPost).to("text").of(nameField);
-									bind("text").of(nameField).to(ATTR_NAME).of(nextPost, withRelease);
-
-									unbind("text").of(postField).from(ATTR_MESSAGE).of(postModel);
-									unbind(ATTR_MESSAGE).of(postModel).from("text").of(postField);
-									bind(ATTR_MESSAGE).of(nextPost).to("text").of(postField);
-									bind("text").of(postField).to(ATTR_MESSAGE).of(nextPost, withRelease);
-									
-									postModel = nextPost;
-								}
-							});
-						
-							Label userName = new Label(nextPost.getAt(ATTR_NAME).getValue().toString());
+							final Label userName = new Label(nextPost.getAt(ATTR_NAME).getValue().toString());
 							bind("text").of(userName).to(ATTR_NAME).of(nextPost, withRelease); 
 							bind(ATTR_NAME).of(nextPost).to("text").of(userName);
-							Label postDate = new Label(nextPost.getAt(ATTR_DATE).getValue().toString()); 
+							final Label postDate = new Label(nextPost.getAt(ATTR_DATE).getValue().toString()); 
 							bind("text").of(postDate).to(ATTR_DATE).of(nextPost, withRelease); 
 							bind(ATTR_DATE).of(nextPost).to("text").of(postDate);
-							Label userPost = new Label(nextPost.getAt(ATTR_MESSAGE).getValue().toString()); 
+							final Label userPost = new Label(nextPost.getAt(ATTR_MESSAGE).getValue().toString()); 
 							bind("text").of(userPost).to(ATTR_MESSAGE).of(nextPost, withRelease); 
 							bind(ATTR_MESSAGE).of(nextPost).to("text").of(userPost);
 							
 							box.getChildren().addAll(userName, postDate, userPost); 
 							
 							chatWindow.getChildren().addAll(box);
+							
+							box.setOnMouseClicked(new EventHandler<Event>() {
+
+								@Override
+								public void handle(Event event) {
+									postField.setText(userPost.getText());
+									nameField.setText(userName.getText());
+//									unbind("text").of(nameField).from(ATTR_NAME).of(postModel);
+//									unbind(ATTR_NAME).of(postModel).from("text").of(nameField);
+//									unbind("text").of(postField).from(ATTR_MESSAGE).of(postModel);
+//									unbind(ATTR_MESSAGE).of(postModel).from("text").of(postField);
+//
+//									bind(ATTR_NAME).of(nextPost).to("text").of(nameField);
+//									bind("text").of(nameField).to(ATTR_NAME).of(nextPost, withRelease);
+//									bind(ATTR_MESSAGE).of(nextPost).to("text").of(postField);
+//									bind("text").of(postField).to(ATTR_MESSAGE).of(nextPost, withRelease);
+//									
+//									postModel = nextPost;
+								}
+							});
+						
 						}
 						if (event.getType() == ModelStoreEvent.Type.REMOVED) {
 							System.out.println(" wir haben den pm geloescht:  "
