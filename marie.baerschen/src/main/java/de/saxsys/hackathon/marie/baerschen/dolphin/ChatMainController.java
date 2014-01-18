@@ -11,17 +11,24 @@ import static de.saxsys.hackathon.marie.baerschen.dolphin.ChatterConstants.TYPE_
 import static org.opendolphin.binding.JFXBinder.bind;
 import groovy.util.Eval;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 
 import org.opendolphin.binding.Converter;
@@ -35,6 +42,9 @@ import org.opendolphin.core.client.comm.OnFinishedHandlerAdapter;
 
 public class ChatMainController {
 
+    private static int BOX_WIDTH = 30;
+    private static int BOX_HEIGHT = 30;
+
     static ClientDolphin clientDolphin;
 
     @FXML
@@ -44,9 +54,13 @@ public class ChatMainController {
     @FXML
     private Button newButton;
     @FXML
-    private VBox chatWindow;
+    private Pane chatWindow;
 
     private final ClientPresentationModel postModel;
+
+    private final Map<String, TitledPane> participants = new HashMap<>();
+
+    private final Random rand = new Random();
 
     public ChatMainController() {
         ClientAttribute nameAttribute = new ClientAttribute(ATTR_NAME, "");
@@ -112,72 +126,86 @@ public class ChatMainController {
 
         clientDolphin.addModelStoreListener(TYPE_POST, new ModelStoreListener() {
             @Override
-            public void modelStoreChanged(ModelStoreEvent event) {
+            public void modelStoreChanged(final ModelStoreEvent event) {
                 if (event.getType() == ModelStoreEvent.Type.ADDED) {
                     System.out.println(" wir haben den pm bekommen:  " + event.getPresentationModel().getId());
                     final ClientPresentationModel nextPost = (ClientPresentationModel) event.getPresentationModel();
 
-                    HBox box = new HBox();
-                    
-                    box.setTranslateX(300);
-                    box.setTranslateY(300);
+                    final VBox participantHolderContent =
+                            (VBox) getParticipantHolder(getUserId(event.getPresentationModel()),
+                                    event.getPresentationModel()).getContent();
 
-                    
+                    final HBox box = new HBox();
+
                     box.setId(event.getPresentationModel().getId());
-                    
-                    
+
                     box.setOnMouseClicked(new EventHandler<Event>() {
-                    	
+
                         @Override
                         public void handle(Event event) {
-                        	                        	
-                        	PresentationModel dolphin = clientDolphin.getAt(((HBox)event.getSource()).getId());
-                        	
-                        	if (dolphin != null){
-                        		System.out.println("dolphins name: " + dolphin.getAt(ATTR_NAME).getValue());
-                        		System.out.println("dolphins id: " + dolphin.getAt(ATTR_NAME).getId());
-                        		
-                        		String dolphinsContent = dolphin.getAt(ATTR_NAME).getQualifier().split("-")[0];
-                        		
-                        		String postModelContent = postModel.getAt(ATTR_NAME).getQualifier().split("-")[0];
-                        		
-                        		System.out.println("dolphinsContent: " + dolphinsContent);
-                        		System.out.println("postModelContent: " + postModelContent);
-                        		
-                        		if (dolphinsContent.equals(postModelContent)){
-                        			clientDolphin.apply(nextPost).to(postModel);
+
+                            PresentationModel dolphin = clientDolphin.getAt(((HBox) event.getSource()).getId());
+
+                            if (dolphin != null) {
+                                String dolphinsContent = getUserId(dolphin);
+
+                                String postModelContent = getUserId(postModel);
+
+                                if (dolphinsContent.equals(postModelContent)) {
+                                    clientDolphin.apply(nextPost).to(postModel);
                                     release();
-                        		}
-                        		else {
-                        			System.out.println("not");
-                        		}
-                        		
-                        	}
-                        	
-                            
+                                }
+
+                            }
 
                         }
                     });
 
-                    Label userName = new Label(nextPost.getAt(ATTR_NAME).getValue().toString());
-                    
-                    bind("text").of(userName).to(ATTR_NAME).of(nextPost, withRelease);
-                    bind(ATTR_NAME).of(nextPost).to("text").of(userName);
-                    Label postDate = new Label(nextPost.getAt(ATTR_DATE).getValue().toString());
+                    // final Label userName = new Label(nextPost.getAt(ATTR_NAME).getValue().toString());
+                    //
+                    // bind("text").of(userName).to(ATTR_NAME).of(nextPost, withRelease);
+                    // bind(ATTR_NAME).of(nextPost).to("text").of(userName);
+                    final Label postDate = new Label(nextPost.getAt(ATTR_DATE).getValue().toString());
                     bind("text").of(postDate).to(ATTR_DATE).of(nextPost, withRelease);
                     bind(ATTR_DATE).of(nextPost).to("text").of(postDate);
-                    Label userPost = new Label(nextPost.getAt(ATTR_MESSAGE).getValue().toString());
+                    final Label userPost = new Label(nextPost.getAt(ATTR_MESSAGE).getValue().toString());
                     bind("text").of(userPost).to(ATTR_MESSAGE).of(nextPost, withRelease);
                     bind(ATTR_MESSAGE).of(nextPost).to("text").of(userPost);
 
-                    box.getChildren().addAll(userName, postDate, userPost);
+                    Platform.runLater(new Runnable() {
 
-                    chatWindow.getChildren().addAll(box);
+                        @Override
+                        public void run() {
+                            box.getChildren().addAll(postDate, userPost);
+
+                            participantHolderContent.getChildren().add(box);
+                        }
+
+                    });
                 }
                 if (event.getType() == ModelStoreEvent.Type.REMOVED) {
                     System.out.println(" wir haben den pm geloescht:  " + event.getPresentationModel().getId());
+                    final TitledPane participantHolder =
+                            getParticipantHolder(getUserId(event.getPresentationModel()), event.getPresentationModel());
+                    Platform.runLater(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            HBox boxToRemove = null;
+                            for (Node hbox : ((VBox) participantHolder.getContent()).getChildren()) {
+                                HBox post = (HBox) hbox;
+                                if (post.getId().equals(event.getPresentationModel().getId())) {
+                                    boxToRemove = post;
+                                }
+                            }
+                            ((VBox) participantHolder.getContent()).getChildren().removeAll(boxToRemove);
+                        }
+
+                    });
+
                 }
             }
+
         });
 
         // on select : pm per id:
@@ -185,6 +213,37 @@ public class ChatMainController {
         // clientDolphin.apply(pm).to(postModel);
         // release();
 
+    }
+
+    protected String getUserName(PresentationModel presentationModel) {
+        return presentationModel.getAt(ATTR_NAME).getValue().toString();
+    }
+
+    private String getUserId(PresentationModel presentationModel) {
+        return presentationModel.getAt(ATTR_NAME).getQualifier().split("-")[0];
+    }
+
+    private TitledPane getParticipantHolder(String id, PresentationModel presentationModel) {
+        TitledPane holder = participants.get(id);
+        if (holder == null) {
+            holder = new MovableTitledPane(presentationModel.getAt(ATTR_NAME).getValue().toString(), new VBox());
+
+            holder.setTranslateX(rand.nextInt((int) chatWindow.getWidth() - BOX_WIDTH));
+            holder.setTranslateY(rand.nextInt((int) chatWindow.getHeight() - BOX_HEIGHT));
+            holder.getStyleClass().add("vbox");
+            final TitledPane consistentHolder = holder;
+            Platform.runLater(new Runnable() {
+
+                @Override
+                public void run() {
+                    chatWindow.getChildren().add(consistentHolder);
+                }
+
+            });
+            participants.put(id, holder);
+        }
+        bind(ATTR_NAME).of(presentationModel).to("text").of(holder);
+        return holder;
     }
 
     private void addClientSideAction() {
