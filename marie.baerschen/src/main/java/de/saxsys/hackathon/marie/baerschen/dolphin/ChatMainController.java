@@ -9,24 +9,21 @@ import static de.saxsys.hackathon.marie.baerschen.dolphin.ChatterConstants.CMD_P
 import static de.saxsys.hackathon.marie.baerschen.dolphin.ChatterConstants.PM_ID_INPUT;
 import static de.saxsys.hackathon.marie.baerschen.dolphin.ChatterConstants.TYPE_POST;
 import static org.opendolphin.binding.JFXBinder.bind;
+import static org.opendolphin.binding.JFXBinder.unbind;
 import groovy.util.Eval;
 
 import java.util.List;
 
-import javafx.application.Application;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
-import javafx.scene.Scene;
+import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBuilder;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextAreaBuilder;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextFieldBuilder;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.PaneBuilder;
-import javafx.scene.layout.VBoxBuilder;
-import javafx.stage.Stage;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import org.opendolphin.binding.Converter;
 import org.opendolphin.core.ModelStoreEvent;
@@ -37,17 +34,22 @@ import org.opendolphin.core.client.ClientDolphin;
 import org.opendolphin.core.client.ClientPresentationModel;
 import org.opendolphin.core.client.comm.OnFinishedHandlerAdapter;
 
-public class ChatApplication extends Application {
+public class ChatMainController {
 
 	static ClientDolphin clientDolphin;
-
+	
+	@FXML
 	private TextField nameField;
+	@FXML
 	private TextArea postField;
+	@FXML
 	private Button newButton;
+	@FXML
+	private VBox chatWindow; 
 
-	private final PresentationModel postModel;
+	private PresentationModel postModel;
 
-	public ChatApplication() {
+	public ChatMainController() {
 		ClientAttribute nameAttribute = new ClientAttribute(ATTR_NAME, "");
 		ClientAttribute postAttribute = new ClientAttribute(ATTR_MESSAGE, "");
 		ClientAttribute dateAttribute = new ClientAttribute(ATTR_DATE, "");
@@ -55,38 +57,19 @@ public class ChatApplication extends Application {
 				postAttribute, dateAttribute);
 	}
 
-	@Override
-	public void start(Stage stage) throws Exception {
-		Pane root = PaneBuilder
-				.create()
-				.children(
-						VBoxBuilder
-								.create()
-								.id("content")
-								.children(
-										nameField = TextFieldBuilder.create()
-												.build(),
-										postField = TextAreaBuilder.create()
-												.build(),
-										newButton = ButtonBuilder.create()
-												.build()).build()).build();
-
+	@FXML
+	public void initialize() {
+		
 		setupBinding();
 		addClientSideAction();
 
-		Scene scene = new Scene(root, 300, 250);
-		stage.setScene(scene);
-		stage.setTitle(getClass().getName());
-		// scene.getStylesheets().add("/path/to/css");
-
-		stage.show();
-
+		
 		clientDolphin.send(CMD_INIT, new OnFinishedHandlerAdapter() {
 			@Override
 			public void onFinished(
 					List<ClientPresentationModel> presentationModels) {
 				System.out.println("" + presentationModels.size() + "bekommen");
-				// visualisieren, dass wir die initialen Daten haben.
+				
 
 				longPoll();
 
@@ -140,6 +123,41 @@ public class ChatApplication extends Application {
 						if (event.getType() == ModelStoreEvent.Type.ADDED) {
 							System.out.println(" wir haben den pm bekommen:  "
 									+ event.getPresentationModel().getId());
+							final PresentationModel nextPost = event.getPresentationModel(); 
+							
+							HBox box = new HBox(); 
+							
+							box.setOnMouseClicked(new EventHandler<Event>() {
+
+								@Override
+								public void handle(Event event) {
+									unbind("text").of(nameField).from(ATTR_NAME).of(postModel);
+									unbind(ATTR_NAME).of(postModel).from("text").of(nameField);
+									bind(ATTR_NAME).of(nextPost).to("text").of(nameField);
+									bind("text").of(nameField).to(ATTR_NAME).of(nextPost, withRelease);
+
+									unbind("text").of(postField).from(ATTR_MESSAGE).of(postModel);
+									unbind(ATTR_MESSAGE).of(postModel).from("text").of(postField);
+									bind(ATTR_MESSAGE).of(nextPost).to("text").of(postField);
+									bind("text").of(postField).to(ATTR_MESSAGE).of(nextPost, withRelease);
+									
+									postModel = nextPost;
+								}
+							});
+						
+							Label userName = new Label(nextPost.getAt(ATTR_NAME).getValue().toString());
+							bind("text").of(userName).to(ATTR_NAME).of(nextPost, withRelease); 
+							bind(ATTR_NAME).of(nextPost).to("text").of(userName);
+							Label postDate = new Label(nextPost.getAt(ATTR_DATE).getValue().toString()); 
+							bind("text").of(postDate).to(ATTR_DATE).of(nextPost, withRelease); 
+							bind(ATTR_DATE).of(nextPost).to("text").of(postDate);
+							Label userPost = new Label(nextPost.getAt(ATTR_MESSAGE).getValue().toString()); 
+							bind("text").of(userPost).to(ATTR_MESSAGE).of(nextPost, withRelease); 
+							bind(ATTR_MESSAGE).of(nextPost).to("text").of(userPost);
+							
+							box.getChildren().addAll(userName, postDate, userPost); 
+							
+							chatWindow.getChildren().addAll(box);
 						}
 						if (event.getType() == ModelStoreEvent.Type.REMOVED) {
 							System.out.println(" wir haben den pm geloescht:  "
@@ -161,6 +179,7 @@ public class ChatApplication extends Application {
 			@Override
 			public void handle(ActionEvent arg0) {
 				clientDolphin.send(CMD_POST);
+				release();
 			}
 		});
 	}

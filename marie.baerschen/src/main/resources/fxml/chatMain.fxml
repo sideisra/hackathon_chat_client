@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+
+<AnchorPane id="AnchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="600.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2" fx:controller="de.saxsys.hackathon.marie.baerschen.dolphin.ChatMainController">
+  <children>
+    <SplitPane dividerPositions="0.6791979949874687" focusTraversable="true" orientation="VERTICAL" prefHeight="-1.0" prefWidth="-1.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <items>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+          <children>
+            <VBox fx:id="chatWindow" prefHeight="539.0" prefWidth="598.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+          </children>
+        </AnchorPane>
+        <AnchorPane maxHeight="255.0" minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+          <children>
+            <VBox prefHeight="151.0" prefWidth="598.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+              <children>
+                <TextField id="nameInput" fx:id="nameField" minHeight="-Infinity" prefHeight="30.0" prefWidth="528.0">
+                  <VBox.margin>
+                    <Insets left="30.0" right="40.0" top="10.0" />
+                  </VBox.margin>
+                </TextField>
+                <TextArea id="messageInput" fx:id="postField" prefWidth="200.0" wrapText="true">
+                  <VBox.margin>
+                    <Insets left="30.0" right="40.0" top="5.0" />
+                  </VBox.margin>
+                </TextArea>
+                <Button id="newPostButton" fx:id="newButton" mnemonicParsing="false" text="New Post">
+                  <VBox.margin>
+                    <Insets bottom="10.0" left="30.0" right="40.0" top="10.0" />
+                  </VBox.margin>
+                </Button>
+              </children>
+            </VBox>
+          </children>
+        </AnchorPane>
+      </items>
+    </SplitPane>
+  </children>
+</AnchorPane>
